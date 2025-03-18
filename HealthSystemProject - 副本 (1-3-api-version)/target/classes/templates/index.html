@@ -1,0 +1,48 @@
+<!-- src/main/resources/templates/layout.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.min.css" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <link th:href="@{/css/login.css}" rel="stylesheet">
+</head>
+<body>
+<!-- 引入头部导航栏 -->
+<th:block th:replace="fragments/header :: header"></th:block>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- 引入侧边导航栏 -->
+        <th:block th:replace="fragments/sidebar :: sidebar"></th:block>
+
+        <!-- 主内容区 -->
+        <div class="col-md-10 col-lg-10 main-content tab-content">
+            <th:block th:replace="pages/health-info :: health-info"></th:block>
+            <th:block th:replace="pages/health-management :: health-management"></th:block>
+            <th:block th:replace="pages/health-analysis :: health-analysis"></th:block>
+            <th:block th:replace="pages/user-center :: user-center"></th:block>
+            <th:block th:replace="pages/settings :: settings"></th:block>
+        </div>
+    </div>
+</div>
+
+<!-- 引入模态框 -->
+<th:block th:replace="fragments/modals :: modals"></th:block>
+
+<!-- JavaScript 依赖 -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- 自定义 JavaScript -->
+<script th:src="@{/js/app.js}"></script>
+<script th:src="@{/js/chart-config.js}"></script>
+<script th:src="@{/js/form-handler.js}"></script>
+<script th:src="@{/js/health-form.js}"></script>
+<script th:src="@{/js/responsive.js}"></script>
+</body>
+</html>

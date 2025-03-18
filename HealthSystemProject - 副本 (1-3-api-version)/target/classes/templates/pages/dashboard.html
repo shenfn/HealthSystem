@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/header :: header(pageTitle='仪表盘')}"/>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* 整体布局样式 */
+        .chart-container { width: 50%; float: left; padding: 10px; }
+        .info-container { width: 50%; float: right; padding: 10px; }
+        .card { margin-bottom: 20px; border: none; border-radius: 12px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); }
+        canvas { max-height: 200px; }
+
+        /* 美化健康概览卡片 */
+        .info-container .card { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); }
+        .info-container .card-header { background: none; font-size: 1.2rem; font-weight: bold; color: #333; border-bottom: none; }
+        .info-item { display: flex; align-items: center; margin-bottom: 15px; padding: 10px; background: rgba(255, 255, 255, 0.8); border-radius: 8px; }
+        .info-item i { font-size: 1.5rem; margin-right: 10px; color: #3a6186; }
+        .info-item h6 { margin: 0; font-size: 0.9rem; color: #666; }
+        .info-item h4 { margin: 0; font-size: 1.3rem; color: #333; }
+
+        /* 美化表格 */
+        .custom-table { border-collapse: separate; border-spacing: 0; width: 100%; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        .custom-table thead { background: linear-gradient(135deg, #3a6186 0%, #89253e 100%); color: #fff; }
+        .custom-table th, .custom-table td { padding: 12px 15px; text-align: center; }
+        .custom-table th { font-weight: 600; }
+        .custom-table tbody tr { transition: background 0.2s; }
+        .custom-table tbody tr:hover { background: #f5f7fa; }
+        .custom-table tbody td { border-bottom: 1px solid #e9ecef; font-size: 0.95rem; color: #333; }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- 侧边栏 -->
+        <div th:replace="~{fragments/sidebar :: sidebar(activePage='dashboard')}"></div>
+
+        <!-- 主内容区 -->
+        <div class="col-md-10 col-lg-10 main-content">
+            <div class="card">
+                <div class="card-header">仪表盘</div>
+                <div class="card-body">
+                    <h5 class="card-title">欢迎使用健康管理系统！</h5>
+                    <p class="card-text">以下是您的健康概览和记录。</p>
+
+                    <!-- 体重趋势图 -->
+                    <div class="chart-container">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span>体重趋势</span>
+                                <button class="btn btn-sm btn-outline-primary" id="refreshWeightChartBtn">
+                                    <i class="bi bi-arrow-clockwise"></i> 刷新
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="weightChart" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 健康概览 -->
+                    <div class="info-container">
+                        <div class="card">
+                            <div class="card-header">健康概览</div>
+                            <div class="card-body">
+                                <div class="info-item">
+                                    <i class="bi bi-heart-fill"></i>
+                                    <div>
+                                        <h6>健康评分</h6>
+                                        <h4 id="healthScore">N/A 分</h4>
+                                    </div>
+                                </div>
+                                <div class="info-item">
+                                    <i class="bi bi-clipboard-check"></i>
+                                    <div>
+                                        <h6>整体健康状况</h6>
+                                        <h4 id="overallHealth">N/A</h4>
+                                    </div>
+                                </div>
+                                <div class="info-item">
+                                    <i class="bi bi-person-fill"></i>
+                                    <div>
+                                        <h6>最新体重</h6>
+                                        <h4 id="currentWeight">N/A kg</h4>
+                                    </div>
+                                </div>
+                                <div class="info-item">
+                                    <i class="bi bi-rulers"></i>
+                                    <div>
+                                        <h6>最新 BMI</h6>
+                                        <h4 id="latestBMI">N/A</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="clear: both;"></div>
+
+                    <!-- 健康数据记录表格 -->
+                    <div class="card mt-3">
+                        <div class="card-header">健康数据记录</div>
+                        <div class="card-body">
+                            <table class="custom-table" id="healthDataTable">
+                                <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>日期</th>
+                                    <th>体重 (kg)</th>
+                                    <th>身高 (cm)</th>
+                                    <th>血糖 (mmol/L)</th>
+                                    <th>步数</th>
+                                    <th>备注</th>
+                                </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                            <a th:href="@{/health-management}" class="btn btn-primary mt-3">管理记录</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let healthRecords = [];
+
+    // 初始化图表
+    const ctx = document.getElementById('weightChart').getContext('2d');
+    const weightChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: '体重变化',
+                data: [],
+                borderColor: '#3a6186',
+                tension: 0.1,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+
+    // 更新表格
+    function updateHealthDataTable(records) {
+        const tbody = document.getElementById('healthDataTable').getElementsByTagName('tbody')[0];
+        tbody.innerHTML = '';
+        records.forEach(record => {
+            console.log('Record (dashboard):', record); // 调试
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${record.id || 'N/A'}</td>
+                <td>${record.date || 'N/A'}</td>
+                <td>${record.weight != null ? record.weight.toFixed(1) : 'N/A'}</td>
+                <td>${record.height || 'N/A'}</td>
+                <td>${record.bloodSugar != null ? record.bloodSugar.toFixed(1) : 'N/A'}</td>
+                <td>${record.steps || 'N/A'}</td>
+                <td>${record.notes || '无'}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // 更新图表和健康概览
+    function updateChartAndInfo(records, showAlert = false) {
+        healthRecords = records;
+        weightChart.data.labels = healthRecords.map(record => record.date || 'N/A');
+        weightChart.data.datasets[0].data = healthRecords.map(record => record.weight || 0);
+        weightChart.update();
+
+        updateHealthDataTable(healthRecords);
+
+        if (healthRecords.length > 0) {
+            const latestRecord = healthRecords[0];
+            console.log('Latest Record (dashboard):', latestRecord); // 调试
+
+            // 最新体重
+            document.getElementById('currentWeight').textContent = `${latestRecord.weight != null ? latestRecord.weight.toFixed(1) : 'N/A'} kg`;
+
+            // 健康评分
+            const healthScore = calculateHealthScore(latestRecord);
+            document.getElementById('healthScore').textContent = `${healthScore} 分`;
+
+            // 整体健康状况
+            const overallHealth = getOverallHealthStatus(latestRecord);
+            document.getElementById('overallHealth').textContent = overallHealth;
+
+            // 最新 BMI
+            const bmi = latestRecord.weight != null && latestRecord.height != null ?
+                (latestRecord.weight / Math.pow(latestRecord.height / 100.0, 2)).toFixed(1) : 'N/A';
+            document.getElementById('latestBMI').textContent = bmi;
+        } else {
+            document.getElementById('currentWeight').textContent = 'N/A kg';
+            document.getElementById('healthScore').textContent = 'N/A 分';
+            document.getElementById('overallHealth').textContent = 'N/A';
+            document.getElementById('latestBMI').textContent = 'N/A';
+        }
+
+        if (showAlert) {
+            alert('体重图表和信息已刷新');
+        }
+    }
+
+    // 获取最新数据
+    function fetchHealthRecords(showAlert = false) {
+        fetch('/health-info/records')
+            .then(response => {
+                if (!response.ok) throw new Error('获取健康记录失败');
+                return response.json();
+            })
+            .then(records => {
+                console.log('Fetched Records (dashboard):', records); // 调试
+                updateChartAndInfo(records, showAlert);
+            })
+            .catch(error => {
+                console.error('加载数据失败:', error);
+            });
+    }
+
+    // 刷新按钮
+    document.getElementById('refreshWeightChartBtn').addEventListener('click', function() {
+        fetchHealthRecords(true);
+    });
+
+    // 页面加载时初始化
+    fetchHealthRecords();
+
+    // 健康计算函数（从 HealthCalculator 移植到前端）
+    function calculateHealthScore(record) {
+        let score = 100;
+
+        // BMI 评分
+        if (record.weight != null && record.height != null) {
+            const bmi = record.weight / Math.pow(record.height / 100.0, 2);
+            if (bmi < 18.5 || bmi >= 24.0) {
+                score -= 10;
+            }
+        }
+
+        // 血糖评分
+        if (record.bloodSugar != null) {
+            if (record.bloodSugar > 7.0 || record.bloodSugar < 3.9) {
+                score -= 15;
+            } else if (record.bloodSugar > 6.1) {
+                score -= 5;
+            }
+        }
+
+        // 步数评分
+        if (record.steps != null) {
+            if (record.steps < 5000) {
+                score -= 10;
+            } else if (record.steps >= 10000) {
+                score += 5;
+            }
+        }
+
+        return Math.max(0, Math.min(100, score));
+    }
+
+    function getOverallHealthStatus(record) {
+        let status = '';
+
+        // BMI 状况
+        if (record.weight != null && record.height != null) {
+            const bmi = record.weight / Math.pow(record.height / 100.0, 2);
+            if (bmi < 18.5) status += '体重过轻';
+            else if (bmi < 24.0) status += '正常范围';
+            else if (bmi < 28.0) status += '超重';
+            else status += '肥胖';
+        }
+
+        // 血糖状况
+        if (record.bloodSugar != null) {
+            if (status) status += '，';
+            if (record.bloodSugar < 3.9) status += '血糖过低';
+            else if (record.bloodSugar <= 6.1) status += '正常血糖';
+            else if (record.bloodSugar <= 7.0) status += '血糖偏高';
+            else status += '血糖过高';
+        }
+
+        // 步数状况
+        if (record.steps != null) {
+            if (status) status += '，';
+            if (record.steps < 5000) status += '运动不足';
+            else if (record.steps >= 10000) status += '运动良好';
+            else status += '运动适中';
+        }
+
+        return status || '暂无健康评估';
+    }
+</script>
+</body>
+</html>

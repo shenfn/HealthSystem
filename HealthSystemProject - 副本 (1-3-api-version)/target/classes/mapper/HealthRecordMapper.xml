@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.healthsystem.dao.HealthRecordMapper">
+
+    <select id="findByUserId" resultType="com.healthsystem.model.HealthRecord">
+        SELECT * FROM health_records WHERE user_id = #{userId} ORDER BY date DESC
+    </select>
+
+    <select id="findById" resultType="com.healthsystem.model.HealthRecord">
+        SELECT * FROM health_records WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.healthsystem.model.HealthRecord">
+        INSERT INTO health_records (user_id, date, weight, height, blood_sugar, steps, note)
+        VALUES (#{userId}, #{date}, #{weight}, #{height}, #{bloodSugar}, #{steps}, #{note})
+    </insert>
+
+    <update id="update" parameterType="com.healthsystem.model.HealthRecord">
+        UPDATE health_records
+        SET date = #{date}, weight = #{weight}, height = #{height},
+            blood_sugar = #{bloodSugar}, steps = #{steps}, note = #{note}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM health_records WHERE id = #{id}
+    </delete>
+</mapper>

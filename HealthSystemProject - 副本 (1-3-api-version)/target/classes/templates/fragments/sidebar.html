@@ -1,0 +1,46 @@
+<div th:fragment="sidebar(activePage)" class="col-md-2 col-lg-2 p-0 sidebar">
+    <div class="logo-container">
+        <img th:src="@{/img/logo.png}" alt="Logo" onerror="this.src='https://via.placeholder.com/40'">
+        <span class="logo-text">健康管理系统</span>
+    </div>
+
+    <div class="px-3 mt-4">
+        <div class="category-title">健康管理</div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/dashboard}" th:class="${activePage == 'dashboard' ? 'nav-link active' : 'nav-link'}">
+                    <i class="bi bi-heart-pulse"></i> 健康信息
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/health-management}" th:class="${activePage == 'health-management' ? 'nav-link active' : 'nav-link'}">
+                    <i class="bi bi-clipboard2-data"></i> 健康管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/health-analysis}" th:class="${activePage == 'health-analysis' ? 'nav-link active' : 'nav-link'}">
+                    <i class="bi bi-graph-up"></i> 健康分析
+                </a>
+            </li>
+        </ul>
+
+        <div class="category-title">系统</div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/user-center}" th:class="${activePage == 'user-center' ? 'nav-link active' : 'nav-link'}">
+                    <i class="bi bi-person"></i> 个人中心
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/settings}" th:class="${activePage == 'settings' ? 'nav-link active' : 'nav-link'}">
+                    <i class="bi bi-gear"></i> 系统设置
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-danger" th:href="@{/logout}">
+                    <i class="bi bi-box-arrow-right"></i> 退出
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
